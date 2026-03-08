@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>XironAI — Your AI Bro</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<style>
+  :root {
+    --bg:        #050810;
+    --surface:   #0c1120;
+    --panel:     #0f1a2e;
+    --border:    #1a2d50;
+    --cyan:      #00f5ff;
+    --electric:  #0088ff;
+    --hot:       #ff3c6e;
+    --gold:      #ffd060;
+    --text:      #c8daf5;
+    --muted:     #4a6080;
+    --user-bg:   #0d1f3c;
+    --ai-bg:     #091428;
+    --glow:      0 0 20px rgba(0,245,255,0.25);
+    --glow-hot:  0 0 20px rgba(255,60,110,0.3);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(0,136,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,136,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  /* Vignette */
+  body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 1;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(5,8,16,0.7) 100%);
+    pointer-events: none;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: relative; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 28px;
+    background: rgba(12,17,32,0.95);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    flex-shrink: 0;
+  }
+
+  .logo { display: flex; align-items: center; gap: 14px; }
+
+  .logo-icon {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--electric), var(--cyan));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    box-shadow: var(--glow);
+    animation: pulse-icon 3s ease-in-out infinite;
+    position: relative; overflow: hidden;
+  }
+  .logo-icon::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.15));
+  }
+
+  @keyframes pulse-icon {
+    0%, 100% { box-shadow: 0 0 15px rgba(0,136,255,0.4), 0 0 30px rgba(0,245,255,0.15); }
+    50%       { box-shadow: 0 0 25px rgba(0,136,255,0.7), 0 0 50px rgba(0,245,255,0.3); }
+  }
+
+  .logo-text { display: flex; flex-direction: column; line-height: 1; }
+  .logo-text span:first-child {
+    font-family: 'Orbitron', monospace;
+    font-weight: 900; font-size: 1.4rem; letter-spacing: 2px;
+    background: linear-gradient(90deg, var(--cyan), var(--electric));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .logo-text span:last-child {
+    font-size: 0.7rem; color: var(--muted); letter-spacing: 4px;
+    text-transform: uppercase; font-weight: 300; margin-top: 2px;
+  }
+
+  .status-pill {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 14px;
+    background: rgba(0,255,136,0.06);
+    border: 1px solid rgba(0,255,136,0.2);
+    border-radius: 100px;
+    font-size: 0.72rem; color: #00ff88;
+    letter-spacing: 2px; text-transform: uppercase; font-weight: 600;
+  }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #00ff88;
+    animation: blink 1.4s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; } 50% { opacity: 0.25; }
+  }
+
+  .btn-clear {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 14px; border-radius: 8px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.78rem; letter-spacing: 1px;
+    text-transform: uppercase; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-clear:hover {
+    border-color: var(--hot); color: var(--hot); box-shadow: var(--glow-hot);
+  }
+
+  /* ── CHAT ── */
+  #chat {
+    flex: 1; overflow-y: auto;
+    padding: 28px 0;
+    display: flex; flex-direction: column; gap: 0;
+    position: relative; z-index: 2;
+    scroll-behavior: smooth;
+    scrollbar-gutter: stable;
+  }
+  #chat::-webkit-scrollbar { width: 4px; }
+  #chat::-webkit-scrollbar-track { background: transparent; }
+  #chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ── WELCOME ── */
+  #welcome {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    flex: 1; padding: 40px 20px; gap: 20px;
+    animation: fade-up 0.6s ease both;
+  }
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .welcome-orb {
+    width: 90px; height: 90px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, var(--cyan), var(--electric) 60%, #0033aa);
+    box-shadow: 0 0 60px rgba(0,136,255,0.5), 0 0 120px rgba(0,245,255,0.15);
+    animation: float 4s ease-in-out infinite;
+    position: relative;
+  }
+  .welcome-orb::after {
+    content: '⚡';
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50%       { transform: translateY(-10px) scale(1.03); }
+  }
+
+  .welcome-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 2.2rem; font-weight: 900;
+    background: linear-gradient(135deg, #fff 30%, var(--cyan));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    text-align: center;
+  }
+  .welcome-sub {
+    color: var(--muted); font-size: 1rem; text-align: center;
+    max-width: 400px; line-height: 1.6; letter-spacing: 0.5px;
+  }
+
+  .starter-chips {
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+    max-width: 550px; margin-top: 8px;
+  }
+  .chip {
+    background: rgba(0,136,255,0.08);
+    border: 1px solid rgba(0,136,255,0.22);
+    color: var(--text); padding: 9px 16px;
+    border-radius: 100px; font-size: 0.82rem;
+    cursor: pointer; transition: all 0.2s; letter-spacing: 0.3px;
+    font-family: 'Rajdhani', sans-serif;
+  }
+  .chip:hover {
+    background: rgba(0,245,255,0.12); border-color: var(--cyan);
+    color: var(--cyan); box-shadow: 0 0 15px rgba(0,245,255,0.15);
+    transform: translateY(-1px);
+  }
+
+  /* ── MESSAGES ── */
+  .msg-row {
+    display: flex; padding: 10px 28px; gap: 16px;
+    animation: slide-in 0.35s cubic-bezier(0.22,1,0.36,1) both;
+  }
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .msg-row.user { flex-direction: row-reverse; }
+
+  .avatar {
+    width: 36px; height: 36px; border-radius: 10px;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; margin-top: 4px;
+  }
+  .avatar.ai   { background: linear-gradient(135deg, var(--electric), var(--cyan)); box-shadow: var(--glow); }
+  .avatar.user { background: linear-gradient(135deg, #2a1040, var(--hot)); box-shadow: var(--glow-hot); }
+
+  .bubble {
+    max-width: min(72%, 700px);
+    padding: 14px 18px; border-radius: 16px;
+    line-height: 1.65; font-size: 0.97rem; font-weight: 400;
+    word-break: break-word;
+  }
+  .bubble.ai {
+    background: var(--ai-bg); border: 1px solid var(--border);
+    border-top-left-radius: 4px; color: var(--text); flex: 1;
+  }
+  .bubble.user {
+    background: var(--user-bg); border: 1px solid rgba(255,60,110,0.25);
+    border-top-right-radius: 4px; color: #ddeeff;
+    white-space: pre-wrap;
+  }
+
+  /* ── TYPING INDICATOR ── */
+  .typing-bubble {
+    display: flex; align-items: center; gap: 5px;
+    padding: 14px 18px;
+  }
+  .typing-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--cyan); opacity: 0.6;
+    animation: bounce-dot 1.2s ease-in-out infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; background: var(--electric); }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; background: var(--hot); }
+  @keyframes bounce-dot {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40%            { transform: translateY(-8px); opacity: 1; }
+  }
+
+  /* ── MARKDOWN STYLES ── */
+  .md-body h1, .md-body h2, .md-body h3, .md-body h4 {
+    font-family: 'Orbitron', monospace;
+    color: var(--cyan); margin: 1.1em 0 0.4em;
+    line-height: 1.25; letter-spacing: 0.5px;
+  }
+  .md-body h1 { font-size: 1.2rem; }
+  .md-body h2 { font-size: 1.05rem; }
+  .md-body h3 { font-size: 0.95rem; color: var(--electric); }
+  .md-body h4 { font-size: 0.88rem; color: var(--muted); }
+
+  .md-body p { margin: 0.55em 0; }
+  .md-body p:first-child { margin-top: 0; }
+
+  .md-body a { color: var(--cyan); text-underline-offset: 3px; }
+  .md-body a:hover { color: #fff; }
+
+  .md-body ul, .md-body ol {
+    padding-left: 1.4em; margin: 0.5em 0;
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .md-body li { font-size: 0.95rem; }
+
+  .md-body strong { font-weight: 700; color: #ddeeff; }
+  .md-body em     { font-style: italic; color: var(--gold); }
+
+  .md-body blockquote {
+    margin: 0.7em 0; padding: 8px 14px;
+    border-left: 3px solid var(--cyan);
+    background: rgba(0,245,255,0.06);
+    border-radius: 0 8px 8px 0;
+    color: var(--muted); font-style: italic;
+  }
+
+  .md-body hr { border: none; border-top: 1px solid var(--border); margin: 1em 0; }
+
+  .md-body table { width: 100%; border-collapse: collapse; margin: 0.8em 0; font-size: 0.88rem; overflow-x: auto; display: block; }
+  .md-body th { background: rgba(0,136,255,0.12); color: var(--cyan); font-weight: 600; padding: 7px 12px; text-align: left; border: 1px solid var(--border); font-family: 'Orbitron', monospace; font-size: 0.72rem; letter-spacing: 1px; }
+  .md-body td { padding: 6px 12px; border: 1px solid var(--border); color: var(--text); }
+  .md-body tr:hover td { background: rgba(0,136,255,0.05); }
+
+  /* Inline code */
+  .md-body code:not(pre code) {
+    font-family: 'Courier New', monospace;
+    font-size: 0.83em;
+    background: rgba(0,245,255,0.08);
+    border: 1px solid rgba(0,245,255,0.18);
+    padding: 2px 7px; border-radius: 4px;
+    color: var(--cyan);
+  }
+
+  /* Code blocks */
+  .code-block {
+    margin: 0.85em 0;
+    border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+    background: #07090f;
+  }
+  .code-hdr {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 14px;
+    background: rgba(0,136,255,0.08);
+    border-bottom: 1px solid var(--border);
+  }
+  .code-lang {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem; text-transform: uppercase;
+    letter-spacing: 2px; color: var(--cyan); font-weight: 700;
+  }
+  .copy-btn {
+    display: flex; align-items: center; gap: 5px;
+    background: transparent;
+    border: 1px solid var(--border); border-radius: 4px;
+    color: var(--muted);
+    font-family: 'Rajdhani', sans-serif; font-size: 0.7rem;
+    letter-spacing: 1px; text-transform: uppercase;
+    padding: 2px 9px; cursor: pointer; transition: all 0.15s;
+  }
+  .copy-btn:hover { border-color: var(--cyan); color: var(--cyan); background: rgba(0,245,255,0.07); }
+  .copy-btn.ok    { border-color: #00ff88; color: #00ff88; background: rgba(0,255,136,0.07); }
+  .code-block pre { margin: 0; padding: 14px 16px; overflow-x: auto; font-size: 0.84rem; line-height: 1.7; }
+  .code-block pre code { background: none !important; border: none !important; padding: 0 !important; }
+
+  /* Error */
+  .err-box {
+    padding: 10px 14px;
+    background: rgba(255,60,110,0.07);
+    border: 1px solid rgba(255,60,110,0.22);
+    border-radius: 10px; color: var(--hot);
+    font-size: 0.88rem; line-height: 1.5;
+  }
+
+  /* ── INPUT AREA ── */
+  #input-area {
+    position: relative; z-index: 10;
+    padding: 16px 28px 22px;
+    background: rgba(12,17,32,0.95);
+    border-top: 1px solid var(--border);
+    backdrop-filter: blur(12px); flex-shrink: 0;
+  }
+  .input-shell {
+    display: flex; align-items: flex-end; gap: 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 12px 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .input-shell:focus-within {
+    border-color: rgba(0,245,255,0.4);
+    box-shadow: 0 0 0 3px rgba(0,245,255,0.07), var(--glow);
+  }
+  #user-input {
+    flex: 1; background: transparent;
+    border: none; outline: none;
+    color: #e8f4ff;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem; font-weight: 400;
+    line-height: 1.5; resize: none;
+    max-height: 160px; overflow-y: auto;
+    letter-spacing: 0.2px;
+  }
+  #user-input::placeholder { color: var(--muted); }
+  #user-input::-webkit-scrollbar { width: 0; }
+
+  #send-btn {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--electric), var(--cyan));
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.2s;
+    box-shadow: 0 0 18px rgba(0,136,255,0.4);
+  }
+  #send-btn:hover:not(:disabled) { transform: scale(1.08); box-shadow: 0 0 28px rgba(0,245,255,0.5); }
+  #send-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+  #send-btn svg { fill: #fff; width: 18px; height: 18px; }
+
+  .input-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 8px; padding: 0 4px;
+  }
+  .input-hint { font-size: 0.7rem; color: var(--muted); letter-spacing: 0.5px; }
+  .model-tag {
+    font-size: 0.68rem; color: var(--muted);
+    font-family: 'Orbitron', monospace; letter-spacing: 1px;
+    border: 1px solid var(--border); padding: 2px 8px; border-radius: 100px;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    header { padding: 12px 16px; }
+    .msg-row { padding: 8px 16px; }
+    #input-area { padding: 12px 16px 18px; }
+    .bubble { max-width: 88%; }
+    .status-pill { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div class="logo-text">
+      <span>XironAI</span>
+      <span>Neural Bro v2.0</span>
+    </div>
+  </div>
+  <div class="status-pill">
+    <div class="status-dot"></div>
+    Online
+  </div>
+  <div>
+    <button class="btn-clear" onclick="clearChat()">Clear Chat</button>
+  </div>
+</header>
+
+<div id="chat">
+  <div id="welcome">
+    <div class="welcome-orb"></div>
+    <div class="welcome-title">Yo, I'm XironAI</div>
+    <p class="welcome-sub">Your AI bro — locked in 24/7. Ask me anything. No cap, full send. Let's get it. 🔥</p>
+    <div class="starter-chips">
+      <button class="chip" onclick="sendChip('What can you do, bro?')">🚀 What can you do?</button>
+      <button class="chip" onclick="sendChip('Drop some life advice for me.')">💡 Life advice</button>
+      <button class="chip" onclick="sendChip('Explain quantum physics like I\'m 5.')">🔥 Quantum physics ELI5</button>
+      <button class="chip" onclick="sendChip('Help me build something epic in Python.')">🎯 Build something epic</button>
+      <button class="chip" onclick="sendChip('Write a sick Rust function that sorts a list super fast.')">🦀 Rust code</button>
+      <button class="chip" onclick="sendChip('Just vibe with me bro.')">💬 Just vibe</button>
+    </div>
+  </div>
+</div>
+
+<div id="input-area">
+  <div class="input-shell">
+    <textarea
+      id="user-input"
+      rows="1"
+      placeholder="Talk to XironAI... no cap 🔥"
+      onkeydown="handleKey(event)"
+      oninput="autoResize(this)"
+    ></textarea>
+    <button id="send-btn" onclick="sendMessage()" disabled title="Send">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+      </svg>
+    </button>
+  </div>
+  <div class="input-footer">
+    <span class="input-hint">Enter to send · Shift+Enter for new line</span>
+    <span class="model-tag">C9-1QE</span>
+  </div>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────
+const ENDPOINT = 'https://cozzyai.onrender.com/api/chat';
+
+// ── State ─────────────────────────────────────────────────────
+let messages    = [];
+let isStreaming  = false;
+let userScrolled = false;
+
+// ── DOM ───────────────────────────────────────────────────────
+const chatEl   = document.getElementById('chat');
+const inputEl  = document.getElementById('user-input');
+const sendBtn  = document.getElementById('send-btn');
+
+// ── Marked: custom renderer for code blocks ───────────────────
+const renderer = new marked.Renderer();
+
+renderer.code = function(token) {
+  let code = '', lang = '';
+  if (typeof token === 'object' && token !== null) {
+    code = token.text || token.raw || '';
+    lang = token.lang || '';
+  } else {
+    code = String(token || '');
+    lang = String(arguments[1] || '');
+  }
+  const langMap = {
+    'py':'python','js':'javascript','ts':'typescript','rs':'rust',
+    'rb':'ruby','sh':'bash','yml':'yaml','c#':'csharp','c++':'cpp',
+    'html':'xml','vue':'xml','luau':'lua'
+  };
+  const hl   = langMap[(lang||'').toLowerCase()] || (lang || 'plaintext');
+  const safe = esc(code);
+  const attr = escAttr(code);
+  return `<div class="code-block">
+  <div class="code-hdr">
+    <span class="code-lang">${esc(lang || 'code')}</span>
+    <button class="copy-btn" data-code="${attr}" onclick="doCopy(this)">⧉ Copy</button>
+  </div>
+  <pre><code class="language-${esc(hl)} hljs">${safe}</code></pre>
+</div>`;
+};
+
+marked.use({ renderer, gfm: true, breaks: true });
+
+// ── Utils ─────────────────────────────────────────────────────
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function escAttr(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+// FIX: chip text passed directly as argument — no emoji-stripping regex needed
+function sendChip(text) {
+  inputEl.value = text;
+  autoResize(inputEl);
+  sendBtn.disabled = false;
+  sendMessage();
+}
+
+// ── Scroll ────────────────────────────────────────────────────
+function scrollBottom(force = false) {
+  if (force || !userScrolled) {
+    chatEl.scrollTo({ top: chatEl.scrollHeight, behavior: 'smooth' });
+  }
+}
+
+chatEl.addEventListener('scroll', () => {
+  const dist = chatEl.scrollHeight - chatEl.scrollTop - chatEl.clientHeight;
+  userScrolled = dist > 80;
+});
+
+// ── Clear chat ────────────────────────────────────────────────
+// FIX: don't touch the DOM welcome element — just track state
+function clearChat() {
+  if (messages.length && !confirm('Clear this conversation?')) return;
+  messages = [];
+  // Remove all message rows, leave only welcome div
+  Array.from(chatEl.children).forEach(el => {
+    if (el.id !== 'welcome') el.remove();
+  });
+  document.getElementById('welcome').style.display = 'flex';
+}
+
+// ── Message rendering ─────────────────────────────────────────
+function hideWelcome() {
+  const w = document.getElementById('welcome');
+  if (w) w.style.display = 'none';
+}
+
+function addUserBubble(text) {
+  hideWelcome();
+  const row = document.createElement('div');
+  row.className = 'msg-row user';
+  row.innerHTML = `
+    <div class="avatar user">🧠</div>
+    <div class="bubble user">${esc(text)}</div>`;
+  chatEl.appendChild(row);
+  scrollBottom(true);
+}
+
+function addAIBubble() {
+  hideWelcome();
+  const row = document.createElement('div');
+  row.className = 'msg-row ai';
+  row.innerHTML = `
+    <div class="avatar ai">⚡</div>
+    <div class="bubble ai"><div class="md-body"></div></div>`;
+  chatEl.appendChild(row);
+  scrollBottom(true);
+  return row.querySelector('.md-body');
+}
+
+function showTyping() {
+  const row = document.createElement('div');
+  row.className = 'msg-row ai';
+  row.id = 'typing-row';
+  row.innerHTML = `
+    <div class="avatar ai">⚡</div>
+    <div class="bubble ai typing-bubble">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>`;
+  chatEl.appendChild(row);
+  scrollBottom(true);
+}
+
+function hideTyping() {
+  document.getElementById('typing-row')?.remove();
+}
+
+// FIX: proper markdown rendering with hljs highlighting
+function renderMD(el, text) {
+  try {
+    el.innerHTML = marked.parse(text);
+    el.querySelectorAll('pre code').forEach(block => {
+      if (!block.dataset.hl) {
+        hljs.highlightElement(block);
+        block.dataset.hl = '1';
+      }
+    });
+  } catch (_) {
+    el.textContent = text;
+  }
+}
+
+// ── Copy button ───────────────────────────────────────────────
+function doCopy(btn) {
+  navigator.clipboard.writeText(btn.dataset.code || '').then(() => {
+    btn.classList.add('ok');
+    btn.textContent = '✓ Copied';
+    setTimeout(() => {
+      btn.classList.remove('ok');
+      btn.textContent = '⧉ Copy';
+    }, 2200);
+  });
+}
+
+// ── Send message ──────────────────────────────────────────────
+async function sendMessage() {
+  const text = inputEl.value.trim();
+  if (!text || isStreaming) return;
+
+  inputEl.value = '';
+  inputEl.style.height = 'auto';
+  sendBtn.disabled = true;
+
+  addUserBubble(text);
+  messages.push({ role: 'user', content: text });
+
+  isStreaming   = true;
+  userScrolled  = false;
+  showTyping();
+
+  try {
+    const res = await fetch(ENDPOINT, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ messages })
+    });
+
+    hideTyping();
+
+    if (!res.ok) {
+      let errMsg = `Server error ${res.status}`;
+      try { const j = await res.json(); errMsg = j.error || errMsg; } catch (_) {}
+      const mdEl = addAIBubble();
+      mdEl.innerHTML = `<div class="err-box">⚡ Bro, something's off — ${esc(errMsg)}</div>`;
+      messages.pop(); // don't keep failed message in history
+      return;
+    }
+
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error('No stream reader');
+
+    const mdEl = addAIBubble();
+    let fullText = '';
+    const decoder = new TextDecoder();
+    // FIX: proper SSE buffer — accumulates across chunk boundaries
+    let buf = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop() ?? ''; // keep incomplete last line in buffer
+
+      for (const raw of lines) {
+        const line = raw.trim();
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6).trim();
+        if (payload === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(payload);
+          const delta  = parsed?.choices?.[0]?.delta?.content ?? '';
+          if (delta) {
+            fullText += delta;
+            renderMD(mdEl, fullText);
+            scrollBottom();
+          }
+        } catch (_) { /* skip malformed chunk */ }
+      }
+    }
+
+    // Final render pass
+    renderMD(mdEl, fullText);
+    messages.push({ role: 'assistant', content: fullText });
+
+  } catch (err) {
+    hideTyping();
+    const mdEl = addAIBubble();
+    mdEl.innerHTML = `<div class="err-box">⚡ Network's cooked bro 🥲 — ${esc(err.message)}</div>`;
+    messages.pop();
+  } finally {
+    isStreaming = false;
+    sendBtn.disabled = !inputEl.value.trim();
+    inputEl.focus();
+  }
+}
+
+// ── Input enable/disable ──────────────────────────────────────
+inputEl.addEventListener('input', () => {
+  sendBtn.disabled = !inputEl.value.trim() || isStreaming;
+});
+
+inputEl.focus();
+</script>
+</body>
+</html>
